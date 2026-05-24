@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -48,6 +49,10 @@ func main() {
 	}
 
 	workdir, _ := os.Getwd()
+	cmdPath := cfg.Command
+	if !filepath.IsAbs(cmdPath) {
+		cmdPath = filepath.Join(workdir, cmdPath)
+	}
 
 	script := fmt.Sprintf(`#!/bin/sh
 # PROVIDE: %s
@@ -60,13 +65,13 @@ name=%s
 rcvar=%s_enable
 
 command="/usr/sbin/daemon"
-command_args="-r -p /var/run/%s.pid -d %s -o /var/log/%s.log %s"
+command_args="-r -p /var/run/%s.pid -o /var/log/%s.log %s"
 
 load_rc_config $name
 : ${%s_enable:="NO"}
 
 run_rc_command "$1"
-`, cfg.Name, cfg.Name, cfg.Name, cfg.Name, workdir, cfg.Name, cfg.Command, cfg.Name)
+`, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cmdPath, cfg.Name)
 
 	target := "/usr/local/etc/rc.d/" + cfg.Name
 	if err := os.WriteFile(target, []byte(script), 0755); err != nil {
