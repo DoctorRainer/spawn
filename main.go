@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -50,7 +51,8 @@ func main() {
 
 	workdir, _ := os.Getwd()
 	cmdPath := cfg.Command
-	if !filepath.IsAbs(cmdPath) {
+
+	if strings.HasPrefix(cmdPath, "./") || strings.HasPrefix(cmdPath, "../") {
 		cmdPath = filepath.Join(workdir, cmdPath)
 	}
 
