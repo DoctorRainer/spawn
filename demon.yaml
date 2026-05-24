@@ -1,2 +1,2 @@
-name: ferron
-command: "ferron run -c ./etc/ferron.conf"
+name: spawn-test
+command: "spawn-test run -c ./etc/spawn.conf"
