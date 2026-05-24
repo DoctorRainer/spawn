@@ -51,7 +51,6 @@ func main() {
 
 	workdir, _ := os.Getwd()
 	cmdPath := cfg.Command
-
 	if strings.HasPrefix(cmdPath, "./") || strings.HasPrefix(cmdPath, "../") {
 		cmdPath = filepath.Join(workdir, cmdPath)
 	}
@@ -67,7 +66,7 @@ name=%s
 rcvar=%s_enable
 
 command="/usr/sbin/daemon"
-command_args="-r -f -H -P /var/run/%s.pid -o /var/log/%s.log -m 3 %s"
+command_args="-r -c -f -H -P /var/run/%s.pid -o /var/log/%s.log -m 3 %s"
 
 load_rc_config $name
 : ${%s_enable:="NO"}
