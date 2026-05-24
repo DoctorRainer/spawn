@@ -70,13 +70,13 @@ name=%s
 rcvar=%s_enable
 
 command="/usr/sbin/daemon"
-command_args="-r -f -H -P /var/run/%%s.pid -o /var/log/%%s.log -m 3 %s"
+command_args="-r -f -H -P /var/run/%s.pid -o /var/log/%s.log -m 3 %s"
 
 load_rc_config $name
 : ${%s_enable:="NO"}
 
 run_rc_command "$1"
-`, cfg.Name, cfg.Name, cfg.Name, cmdPath, cfg.Name)
+`, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cmdPath, cfg.Name)
 
 	target := "/usr/local/etc/rc.d/" + cfg.Name
 	if err := os.WriteFile(target, []byte(script), 0755); err != nil {
