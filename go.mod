@@ -1,4 +1,4 @@
-module spawn
+module github.com/DoctorRainer/spawn
 
 go 1.26.3
 
