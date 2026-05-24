@@ -1,2 +1,2 @@
 name: ferron
-command: "/usr/sbin/ferron run -c /etc/ferron.conf"
+command: "ferron run -c ./etc/ferron.conf"
