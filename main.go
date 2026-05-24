@@ -104,7 +104,7 @@ name=%s
 rcvar=%s_enable
 
 command="/usr/sbin/daemon"
-command_args="-r -f -H -P /var/run/%s.pid -o /var/log/%s.log -m 3 %s%s"
+command_args="-r -f -H -P /var/run/%s.pid -o /var/log/%s.log -m 3 env %s%s"
 
 load_rc_config $name
 : ${%s_enable:="NO"}
