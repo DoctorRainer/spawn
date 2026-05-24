@@ -14,6 +14,22 @@ type Config struct {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "log" {
+		data, _ := os.ReadFile("demon.yaml")
+		var cfg Config
+		yaml.Unmarshal(data, &cfg)
+		if cfg.Name == "" {
+			fmt.Println("Error: no name in demon.yaml")
+			os.Exit(1)
+		}
+		logpath := "/var/log/" + cfg.Name + ".log"
+		cmd := exec.Command("tail", "-f", logpath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Run()
+		return
+	}
+
 	data, err := os.ReadFile("demon.yaml")
 	if err != nil {
 		fmt.Println("Error: demon.yaml not found in current directory")
@@ -31,6 +47,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	workdir, _ := os.Getwd()
+
 	script := fmt.Sprintf(`#!/bin/sh
 # PROVIDE: %s
 # REQUIRE: NETWORKING
@@ -42,13 +60,13 @@ name=%s
 rcvar=%s_enable
 
 command="/usr/sbin/daemon"
-command_args="-r -p /var/run/%s.pid -o /var/log/%s.log %s"
+command_args="-r -p /var/run/%s.pid -d %s -o /var/log/%s.log %s"
 
 load_rc_config $name
 : ${%s_enable:="NO"}
 
 run_rc_command "$1"
-`, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cfg.Command, cfg.Name)
+`, cfg.Name, cfg.Name, cfg.Name, cfg.Name, workdir, cfg.Name, cfg.Command, cfg.Name)
 
 	target := "/usr/local/etc/rc.d/" + cfg.Name
 	if err := os.WriteFile(target, []byte(script), 0755); err != nil {
