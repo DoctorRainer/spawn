@@ -28,8 +28,7 @@ func main() {
 			fmt.Println("Error: no name in demon.yaml")
 			os.Exit(1)
 		}
-		logpath := "/var/log/" + cfg.Name + ".log"
-		cmd := exec.Command("tail", "-f", logpath)
+		cmd := exec.Command("tail", "-f", "/var/log/"+cfg.Name+".log")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Run()
@@ -47,7 +46,6 @@ func main() {
 		fmt.Println("Error parsing demon.yaml:", err)
 		os.Exit(1)
 	}
-
 	if cfg.Name == "" || cfg.Command == "" {
 		fmt.Println("Error: name and command required in demon.yaml")
 		os.Exit(1)
@@ -55,6 +53,7 @@ func main() {
 
 	workdir, _ := os.Getwd()
 
+	// .env + yaml env
 	envMap := make(map[string]string)
 	if envFile, err := os.Open(".env"); err == nil {
 		defer envFile.Close()
@@ -65,18 +64,13 @@ func main() {
 				continue
 			}
 			if before, after, ok := strings.Cut(line, "="); ok {
-				key := strings.TrimSpace(before)
-				value := strings.TrimSpace(after)
-				envMap[key] = value
+				envMap[strings.TrimSpace(before)] = strings.TrimSpace(after)
 			}
 		}
-		if err := scanner.Err(); err != nil {
-			fmt.Printf("Warning: error reading .env file: %v\n", err)
-		}
 	}
-
 	maps.Copy(envMap, cfg.Env)
 
+	// resolve relative paths
 	parts := strings.Fields(cfg.Command)
 	for i, p := range parts {
 		if strings.HasPrefix(p, "./") || strings.HasPrefix(p, "../") {
@@ -85,15 +79,17 @@ func main() {
 	}
 	cmdPath := strings.Join(parts, " ")
 
-	envStr := ""
+	// env part (only if vars exist)
+	envPart := ""
 	if len(envMap) > 0 {
 		var envs []string
 		for k, v := range envMap {
 			envs = append(envs, fmt.Sprintf("%s=%s", k, v))
 		}
-		envStr = strings.Join(envs, " ") + " "
+		envPart = " env " + strings.Join(envs, " ")
 	}
 
+	// rc.d script — now with -d (cwd) + clean env
 	script := fmt.Sprintf(`#!/bin/sh
 # PROVIDE: %s
 # REQUIRE: NETWORKING
@@ -105,13 +101,12 @@ name=%s
 rcvar=%s_enable
 
 command="/usr/sbin/daemon"
-command_args="-r -f -H -P /var/run/%s.pid -o /var/log/%s.log -m 3 env %s%s"
+command_args="-r -f -H -P /var/run/%s.pid -o /var/log/%s.log -d %s -m 3%s %s"
 
 load_rc_config $name
 : ${%s_enable:="NO"}
-
 run_rc_command "$1"
-`, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cfg.Name, envStr, cmdPath, cfg.Name)
+`, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cfg.Name, workdir, envPart, cmdPath, cfg.Name)
 
 	target := "/usr/local/etc/rc.d/" + cfg.Name
 	if err := os.WriteFile(target, []byte(script), 0755); err != nil {
@@ -121,9 +116,12 @@ run_rc_command "$1"
 	}
 
 	fmt.Printf("Created %s (+x)\n", target)
+
 	exec.Command("sysrc", cfg.Name+"_enable=YES").Run()
+	fmt.Printf("Enabled %s\n", cfg.Name)
+
+	exec.Command("service", cfg.Name, "stop").Run()
+	time.Sleep(500 * time.Millisecond)
 	exec.Command("service", cfg.Name, "start").Run()
-	time.Sleep(100 * time.Millisecond)
-	exec.Command("service", cfg.Name, "restart").Run()
-	fmt.Printf("Enabled and started %s\n", cfg.Name)
+	fmt.Printf("Started %s\n", cfg.Name)
 }
