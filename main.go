@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -122,5 +123,7 @@ run_rc_command "$1"
 	fmt.Printf("Created %s (+x)\n", target)
 	exec.Command("sysrc", cfg.Name+"_enable=YES").Run()
 	exec.Command("service", cfg.Name, "start").Run()
+	time.Sleep(100 * time.Millisecond)
+	exec.Command("service", cfg.Name, "restart").Run()
 	fmt.Printf("Enabled and started %s\n", cfg.Name)
 }
