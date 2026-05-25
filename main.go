@@ -126,7 +126,7 @@ run_rc_command "$1"
 	// Stop
 	exec.Command("service", cfg.Name, "stop").Run() // ignore output
 
-	time.Sleep(800 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	// Start with real error capture
 	startCmd := exec.Command("service", cfg.Name, "start")
