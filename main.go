@@ -89,7 +89,6 @@ func main() {
 		envPart = " env " + strings.Join(envs, " ")
 	}
 
-	// rc.d script — now with -d (cwd) + clean env
 	script := fmt.Sprintf(`#!/bin/sh
 # PROVIDE: %s
 # REQUIRE: NETWORKING
@@ -101,12 +100,12 @@ name=%s
 rcvar=%s_enable
 
 command="/usr/sbin/daemon"
-command_args="-r -f -H -P /var/run/%s.pid -o /var/log/%s.log -d %s -m 3%s %s"
+command_args="-r -f -H -P /var/run/%s.pid -o /var/log/%s.log -m 3%s %s"
 
 load_rc_config $name
 : ${%s_enable:="NO"}
 run_rc_command "$1"
-`, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cfg.Name, workdir, envPart, cmdPath, cfg.Name)
+`, cfg.Name, cfg.Name, cfg.Name, cfg.Name, cfg.Name, envPart, cmdPath, cfg.Name)
 
 	target := "/usr/local/etc/rc.d/" + cfg.Name
 	if err := os.WriteFile(target, []byte(script), 0755); err != nil {
@@ -117,11 +116,24 @@ run_rc_command "$1"
 
 	fmt.Printf("Created %s (+x)\n", target)
 
-	exec.Command("sysrc", cfg.Name+"_enable=YES").Run()
-	fmt.Printf("Enabled %s\n", cfg.Name)
+		// Enable
+	if err := exec.Command("sysrc", cfg.Name+"_enable=YES").Run(); err != nil {
+		fmt.Printf("sysrc warning: %v\n", err)
+	} else {
+		fmt.Printf("Enabled %s\n", cfg.Name)
+	}
 
-	exec.Command("service", cfg.Name, "stop").Run()
-	time.Sleep(500 * time.Millisecond)
-	exec.Command("service", cfg.Name, "start").Run()
-	fmt.Printf("Started %s\n", cfg.Name)
+	// Stop
+	exec.Command("service", cfg.Name, "stop").Run() // ignore output
+
+	time.Sleep(800 * time.Millisecond)
+
+	// Start with real error capture
+	startCmd := exec.Command("service", cfg.Name, "start")
+	output, err := startCmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("❌ Start ERROR: %v\nOutput:\n%s\n", err, string(output))
+	} else {
+		fmt.Printf("✅ Started %s\n", cfg.Name)
+	}
 }
