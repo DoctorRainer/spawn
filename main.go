@@ -62,8 +62,15 @@ func main() {
 
 	startCmd := exec.Command("service", cfg.Name, "start")
 	output, err := startCmd.CombinedOutput()
+	out := string(output)
+
 	if err != nil {
-		fmt.Printf("❌ Start ERROR: %v\nOutput:\n%s\n", err, string(output))
+		if strings.Contains(out, "daemon: process already running") {
+			fmt.Printf("✅ %s already running\n", cfg.Name)
+			return
+		}
+
+		fmt.Printf("❌ Start ERROR: %v\nOutput:\n%s\n", err, out)
 		os.Exit(1)
 	}
 
