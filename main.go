@@ -192,7 +192,7 @@ child_pidfile="/var/run/${name}.child.pid"
 procname="/usr/sbin/daemon"
 
 command="/usr/sbin/daemon"
-command_args="-r -f -H -t ${name} -P ${pidfile} -p ${child_pidfile} -o /var/log/${name}.log -m 3%s %s"
+command_args="-r -f -H -t ${name} -P ${pidfile} -p ${child_pidfile} -o /var/log/${name}.log -m 3 -C 10%s %s"
 
 load_rc_config $name
 : ${%s_enable:="NO"}
