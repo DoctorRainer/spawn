@@ -17,6 +17,7 @@ type Config struct {
 	Name    string            `yaml:"name"`
 	Command string            `yaml:"command"`
 	Env     map[string]string `yaml:"env"`
+	User    string            `yaml:"user"`
 }
 
 func main() {
@@ -40,7 +41,7 @@ func main() {
 	cmdStr := resolveCommand(cfg.Command, workdir)
 	envPart := buildEnvPart(envMap)
 
-	script := buildRcScript(cfg.Name, cmdStr, envPart)
+	script := buildRcScript(cfg.Name, cmdStr, envPart, cfg.User)
 
 	target := "/usr/local/etc/rc.d/" + cfg.Name
 	if err := os.WriteFile(target, []byte(script), 0755); err != nil {
@@ -177,7 +178,11 @@ func shellQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'"
 }
 
-func buildRcScript(name, cmdStr, envPart string) string {
+func buildRcScript(name, cmdStr, envPart, user string) string {
+	userPart := ""
+	if user != "" {
+		userPart = " -u " + user
+	}
 	return fmt.Sprintf(`#!/bin/sh
 # PROVIDE: %s
 # REQUIRE: NETWORKING
@@ -192,11 +197,10 @@ child_pidfile="/var/run/${name}.child.pid"
 procname="/usr/sbin/daemon"
 
 command="/usr/sbin/daemon"
-command_args="-R 3 -f -H -t ${name} -P ${pidfile} -p ${child_pidfile} -o /var/log/${name}.log -m 3 -C 5%s %s"
-
+command_args="-R 3 -f -H -t ${name} -P ${pidfile} -p ${child_pidfile} -o /var/log/${name}.log -m 3%s -C 5%s %s"
 load_rc_config $name
 : ${%s_enable:="NO"}
 
 run_rc_command "$1"
-`, name, name, name, envPart, cmdStr, name)
+`, name, name, name, userPart, envPart, cmdStr, name)
 }
