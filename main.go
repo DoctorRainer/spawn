@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -91,6 +92,12 @@ func loadConfig() (Config, error) {
 
 	if cfg.Name == "" || cfg.Command == "" {
 		return Config{}, fmt.Errorf("name and command required in demon.yaml")
+	}
+
+	if cfg.User == "" {
+		if u, err := user.Current(); err == nil {
+			cfg.User = u.Username
+		}
 	}
 
 	return cfg, nil
